@@ -16,7 +16,7 @@ import org.json.JSONObject;
 import org.json.JSONException;
 import org.json.JSONArray;
 import android.widget.Toast;
-
+import android.os.Build;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Observable;
@@ -69,7 +69,7 @@ public class RNDataWedgeIntentsModule extends ReactContextBaseJavaModule impleme
     private static final String ENABLE_PLUGIN = "ENABLE_PLUGIN";
     private static final String DISABLE_PLUGIN = "DISABLE_PLUGIN";
     //  Enumerated Scanner receiver
-    private static final String ACTION_ENUMERATEDLISET = "com.symbol.datawedge.api.ACTION_ENUMERATEDSCANNERLIST";
+    private static final String ACTION_ENUMERATEDSCANNERLIST = "com.symbol.datawedge.api.ACTION_ENUMERATEDSCANNERLIST";
     private static final String KEY_ENUMERATEDSCANNERLIST = "DWAPI_KEY_ENUMERATEDSCANNERLIST";
     //  END DEPRECATED PROPERTIES
 
@@ -94,22 +94,35 @@ public class RNDataWedgeIntentsModule extends ReactContextBaseJavaModule impleme
     }
 
     @Override
-    public void onHostResume() {
-        //Log.v(TAG, "Host Resume");
+public void onHostResume() {
+    Log.v(TAG, "Host Resume");
 
-        //  Note regarding registerBroadcastReceiver:
-        //  This module makes no attempt to unregister the receiver when the application is paused and re-registers the
-        //  receiver when the application comes to the foreground.  Feel free to fork and add this logic to your solution if
-        //  required - I have found in the past this has led to confusion.
-        //  The logic below refers to the now deprecated broadcast receivers.
+    // Создаем IntentFilter для ACTION_ENUMERATEDSCANNERLIST
+    IntentFilter filter = new IntentFilter();
+    filter.addAction(ACTION_ENUMERATEDSCANNERLIST);
 
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(ACTION_ENUMERATEDLISET);
+    // Безопасный вызов registerReceiver в зависимости от SDK
+    if (Build.VERSION.SDK_INT >= 34 && reactContext.getApplicationInfo().targetSdkVersion >= 34) {
+        reactContext.registerReceiver(myEnumerateScannersBroadcastReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+    } else {
         reactContext.registerReceiver(myEnumerateScannersBroadcastReceiver, filter);
-	    if (this.registeredAction != null)
-          registerReceiver(this.registeredAction, this.registeredCategory);
-          
     }
+
+    // Пере-регистрация сканера, если пользователь ранее вызывал registerReceiver()
+    if (this.registeredAction != null) {
+        IntentFilter scanFilter = new IntentFilter();
+        scanFilter.addAction(this.registeredAction);
+        if (this.registeredCategory != null && !this.registeredCategory.isEmpty()) {
+            scanFilter.addCategory(this.registeredCategory);
+        }
+
+        if (Build.VERSION.SDK_INT >= 34 && reactContext.getApplicationInfo().targetSdkVersion >= 34) {
+            reactContext.registerReceiver(scannedDataBroadcastReceiver, scanFilter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            reactContext.registerReceiver(scannedDataBroadcastReceiver, scanFilter);
+        }
+    }
+}
 
     @Override
     public void onHostPause() {
@@ -357,7 +370,11 @@ public class RNDataWedgeIntentsModule extends ReactContextBaseJavaModule impleme
         filter.addAction(action);
         if (category != null && category.length() > 0)
           filter.addCategory(category);
-        this.reactContext.registerReceiver(scannedDataBroadcastReceiver, filter);
+       if (android.os.Build.VERSION.SDK_INT >= 34 && reactContext.getApplicationInfo().targetSdkVersion >= 34) {
+    reactContext.registerReceiver(scannedDataBroadcastReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+} else {
+    reactContext.registerReceiver(scannedDataBroadcastReceiver, filter);
+}
     }
 
     @ReactMethod
@@ -389,7 +406,11 @@ public class RNDataWedgeIntentsModule extends ReactContextBaseJavaModule impleme
                 }
             }
         }
-        this.reactContext.registerReceiver(genericReceiver, filter);
+       if (android.os.Build.VERSION.SDK_INT >= 34 && reactContext.getApplicationInfo().targetSdkVersion >= 34) {
+    reactContext.registerReceiver(genericReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+} else {
+    reactContext.registerReceiver(genericReceiver, filter);
+}
     }
 
     private void unregisterReceivers() {
@@ -472,7 +493,7 @@ public class RNDataWedgeIntentsModule extends ReactContextBaseJavaModule impleme
       }
 
       String action = intent.getAction();
-      if (action.equals(ACTION_ENUMERATEDLISET)) 
+      if (action.equals(ACTION_ENUMERATEDSCANNERLIST)) 
       {
           Bundle b = intent.getExtras();
           String[] scanner_list = b.getStringArray(KEY_ENUMERATEDSCANNERLIST);
