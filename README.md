@@ -20,6 +20,65 @@ react-native link react-native-datawedge-intents
 ```
 Note: as of ReactNative version 0.27 automatic installation of modules is supported via react-native link ... If you are running a version earlier than 0.26 then you will be required to manually install the module.  More detail on manual installation of a typical module can be found [here](https://github.com/Microsoft/react-native-code-push#plugin-installation-android---manual).
 
+NOTE: need to register custom receiver in android folder
+## EXAMPLE:
+```kotlin
+
+package your-package-name
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.os.Bundle
+import android.util.Log
+import com.facebook.react.ReactApplication
+import com.facebook.react.bridge.Arguments
+import com.facebook.react.modules.core.DeviceEventManagerModule
+
+class DWReceiver(private val reactContext: Context) : BroadcastReceiver() {
+    override fun onReceive(context: Context?, intent: Intent?) {
+        if (intent == null) return
+
+        val eventData: Bundle = intent.extras ?: return
+
+        try {
+            val reactApp = reactContext.applicationContext as ReactApplication
+            val reactInstanceManager = reactApp.reactNativeHost.reactInstanceManager
+            val currentReactContext = reactInstanceManager.currentReactContext
+
+            currentReactContext?.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+                ?.emit("datawedge_broadcast_intent", Arguments.fromBundle(eventData))
+
+        } catch (e: Exception) {
+            Log.e("DWReceiver", "Error sending event to React Native", e)
+        }
+    }
+}
+
+```
+### Main Activity.kt
+```kotlin
+  private fun isZebraDevice(): Boolean {
+        return Build.MANUFACTURER?.lowercase()?.contains("zebra") == true
+    }
+    if (isZebraDevice()) {
+      val intentFilter = IntentFilter().apply {
+        addAction("your-package-name.ACTION")
+        addAction("com.symbol.datawedge.api.RESULT_NOTIFICATION")
+        addCategory(Intent.CATEGORY_DEFAULT)
+      }
+
+      val receiver = DWReceiver(this)
+
+      if (Build.VERSION.SDK_INT >= 34 && applicationInfo.targetSdkVersion >= 34) {
+        registerReceiver(receiver, intentFilter, Context.RECEIVER_NOT_EXPORTED)
+      } else {
+        registerReceiver(receiver, intentFilter)
+      }
+    }
+```
+
+
 ## Example usage
 
 There are two samples available for this module:
