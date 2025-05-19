@@ -97,18 +97,18 @@ public class RNDataWedgeIntentsModule extends ReactContextBaseJavaModule impleme
 public void onHostResume() {
     Log.v(TAG, "Host Resume");
 
-    // Создаем IntentFilter для ACTION_ENUMERATEDSCANNERLIST
+    // Create IntentFilter ACTION_ENUMERATEDSCANNERLIST
     IntentFilter filter = new IntentFilter();
     filter.addAction(ACTION_ENUMERATEDSCANNERLIST);
 
-    // Безопасный вызов registerReceiver в зависимости от SDK
+    // According to sdk calling register receiver
     if (Build.VERSION.SDK_INT >= 34 && reactContext.getApplicationInfo().targetSdkVersion >= 34) {
         reactContext.registerReceiver(myEnumerateScannersBroadcastReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
     } else {
         reactContext.registerReceiver(myEnumerateScannersBroadcastReceiver, filter);
     }
 
-    // Пере-регистрация сканера, если пользователь ранее вызывал registerReceiver()
+    // registerReceiver() one more time if user called it already
     if (this.registeredAction != null) {
         IntentFilter scanFilter = new IntentFilter();
         scanFilter.addAction(this.registeredAction);
