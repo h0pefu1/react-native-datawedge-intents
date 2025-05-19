@@ -21,7 +21,7 @@ react-native link react-native-datawedge-intents
 Note: as of ReactNative version 0.27 automatic installation of modules is supported via react-native link ... If you are running a version earlier than 0.26 then you will be required to manually install the module.  More detail on manual installation of a typical module can be found [here](https://github.com/Microsoft/react-native-code-push#plugin-installation-android---manual).
 
 NOTE: need to register custom receiver in android folder
-## EXAMPLE:
+## Example:
 ```kotlin
 
 package your-package-name
